@@ -1,0 +1,14 @@
+defusedxml==0.4.1
+Django==1.8.6
+django-taggit==0.17.1
+Markdown==2.6.2
+oauthlib==2.0.1
+Pillow==2.9.0
+PyJWT==1.4.2
+python-social-auth==0.2.12
+python3-openid==3.0.10
+pytz==2016.10
+requests==2.12.4
+requests-oauthlib==0.7.0
+six==1.10.0
+sorl-thumbnail==12.3
