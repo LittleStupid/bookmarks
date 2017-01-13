@@ -11,6 +11,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from common.decorators import ajax_required
 from .models import Contact
+from actions.utils import create_action
+from actions.models import Action
 
 
 def user_login(request):
@@ -46,6 +48,7 @@ def register(request):
             new_user.save()
             # Create the user profile
             profile = Profile.objects.create(user=new_user)
+            create_action(new_user, 'has created an account')
             return render(request,
                           'account/register_done.html',
                           {'new_user': new_user})
@@ -77,7 +80,16 @@ def edit(request):
 
 @login_required
 def dashboard(request):
-    return render(request, 'account/dashboard.html', {'section': 'dashboard'})
+    actions = Action.objects.exclude(user=request.user)
+    following_ids = request.user.following.values_list('id', flat=True)
+
+    if following_ids:
+        actions = actions.filter(user_id__in=following_ids).select_related(
+            'user', 'user__profile').prefetch_related('target')
+    actions = actions[:10]
+    return render(request, 'account/dashboard.html',
+                  {'section': 'dashboard',
+                   'actions': actions})
 
 
 @login_required
@@ -99,8 +111,10 @@ def user_detail(request, username):
 @require_POST
 @login_required
 def user_follow(request):
+    print('---0')
     user_id = request.POST.get('id')
     action = request.POST.get('action')
+    print('---1')
     if user_id and action:
         try:
             user = User.objects.get(id=user_id)
@@ -109,6 +123,7 @@ def user_follow(request):
                     user_from=request.user,
                     user_to=user
                 )
+                create_action(request.user, 'is following', user)
             else:
                 Contact.objects.filter(
                     user_form=request.user,

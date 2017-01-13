@@ -8,6 +8,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from common.decorators import ajax_required
 from .forms import ImageCreateForm
 from .models import Image
+from actions.utils import create_action
 
 
 @login_required
@@ -25,6 +26,7 @@ def image_create(request):
             # assign current user to the item
             new_item.user = request.user
             new_item.save()
+            create_action(request.user, 'bookmarked image', new_item)
             messages.success(request, 'Image added successfully')
             # redirect to new created item detail view
             return redirect(new_item.get_absolute_url())
@@ -53,12 +55,13 @@ def image_like(request):
             image = Image.objects.get(id=image_id)
             if action == 'like':
                 image.users_like.add(request.user)
+                create_action(request.user, 'likes', image)
             else:
                 image.users_like.remove(request.user)
-            return JsonResponse({'status':'ok'})
+            return JsonResponse({'status': 'ok'})
         except:
             pass
-    return JsonResponse({'status':'ko'})
+    return JsonResponse({'status': 'ko'})
 
 
 @login_required
@@ -73,7 +76,8 @@ def image_list(request):
         images = paginator.page(1)
     except EmptyPage:
         if request.is_ajax():
-            # If the request is AJAX and the page is out of range return an empty page
+            # If the request is AJAX and the page is out of range return an
+            # empty page
             return HttpResponse('')
         # If page is out of range deliver last page of results
         images = paginator.page(paginator.num_pages)
@@ -83,4 +87,4 @@ def image_list(request):
                       {'section': 'images', 'images': images})
     return render(request,
                   'images/image/list.html',
-                   {'section': 'images', 'images': images})
+                  {'section': 'images', 'images': images})
